@@ -1,15 +1,14 @@
 @echo off
-echo Installing dependencies...
-call npm install
-if %errorlevel% neq 0 (
-    echo.
-    echo [ERROR] Could not run 'npm install'. 
-    echo Please make sure Node.js is installed: https://nodejs.org/
-    pause
-    exit /b
-)
-
+echo Starting VitalLink Demo...
 echo.
-echo Starting VitalLink Server...
+echo Make sure you have installed Node.js!
+echo.
+echo [INFO] User Page will be at: http://localhost:3000/user.html
+echo [INFO] Admin Page will be at: http://localhost:3000/admin.html
+echo.
+echo Installing packages (if needed)...
+call npm install --silent
+echo.
+echo Starting Server...
 node server/server.js
 pause

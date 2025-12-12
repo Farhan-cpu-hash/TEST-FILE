@@ -58,6 +58,20 @@ function initDb() {
             whatsappStatus TEXT,
             smsStatus TEXT
         )`);
+
+        // Create Patients Table (For Admin Management)
+        db.run(`CREATE TABLE IF NOT EXISTS patients (
+            id INTEGER PRIMARY KEY,
+            name TEXT,
+            riskLevel INTEGER DEFAULT 1
+        )`);
+
+        // Seed Patient
+        db.get("SELECT count(*) as count FROM patients", (err, row) => {
+            if (row.count === 0) {
+                db.run("INSERT INTO patients (id, name, riskLevel) VALUES (?, ?, ?)", [1, "Demo User (OnePlus Band)", 1]);
+            }
+        });
     });
 }
 
@@ -81,34 +95,34 @@ function simulateMessaging(contact, alertData) {
     // Simulate sending WhatsApp and SMS
     console.log(`[SIMULATION] Sending WhatsApp to Priority ${contact.priority} (${contact.name}: ${contact.phoneNumber})`);
     console.log(`[SIMULATION] Message: SOS! Abnormal Vitals detected at ${alertData.location}. Reasons: ${alertData.reason}`);
-    
+
     console.log(`[SIMULATION] Sending SMS to Priority ${contact.priority} (${contact.name}: ${contact.phoneNumber})`);
     return true; // Success
 }
 
 // --- API ROUTES ---
 
-// 1. Get Contacts
-app.get('/api/contacts', (req, res) => {
+// 1. Get Emergency Contacts (Corrected Endpoint)
+app.get('/api/emergency-contacts', (req, res) => {
     db.all("SELECT * FROM emergency_contacts ORDER BY priority ASC", [], (err, rows) => {
         if (err) return res.status(500).json({ error: err.message });
         res.json(rows);
     });
 });
 
-// 2. Update Contact
-app.post('/api/contacts', (req, res) => {
+// 2. Update Contact (Using PUT as requested)
+app.put('/api/emergency-contacts', (req, res) => {
     const { id, name, phoneNumber } = req.body;
-    db.run("UPDATE emergency_contacts SET name = ?, phoneNumber = ? WHERE id = ?", [name, phoneNumber, id], function(err) {
+    db.run("UPDATE emergency_contacts SET name = ?, phoneNumber = ? WHERE id = ?", [name, phoneNumber, id], function (err) {
         if (err) return res.status(500).json({ error: err.message });
         res.json({ message: "Contact updated" });
     });
 });
 
-// 3. Analyze & Trigger SOS
-app.post('/api/analyze', (req, res) => {
+// 3. Analyze Vitals & Trigger SOS
+app.post('/api/vitals/analyze', (req, res) => {
     const { heartRate, spo2, temperature, location } = req.body;
-    
+
     // Parse as floats
     const hr = parseFloat(heartRate);
     const sp = parseFloat(spo2);
@@ -126,15 +140,15 @@ app.post('/api/analyze', (req, res) => {
     } else {
         // SOS Case
         const reason = "Abnormal value(s): " + abnormalFields.join(", ");
-        
+
         // Fetch contacts to "Send" messages
         db.all("SELECT * FROM emergency_contacts ORDER BY priority ASC LIMIT 3", [], (err, contacts) => {
             if (err) console.error("Error fetching contacts for SOS");
-            
+
             // Simulate sending to each
             let whatsappStatus = "Pending";
             let smsStatus = "Pending";
-            
+
             if (contacts && contacts.length > 0) {
                 contacts.forEach(c => simulateMessaging(c, { location, reason }));
                 whatsappStatus = "Sent (Simulated)";
@@ -146,9 +160,9 @@ app.post('/api/analyze', (req, res) => {
 
             // Save Alert to DB
             const stmt = db.prepare(`INSERT INTO alerts (heartRate, spo2, temperature, location, abnormalFields, reason, whatsappStatus, smsStatus) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`);
-            stmt.run(hr, sp, tm, location, JSON.stringify(abnormalFields), reason, whatsappStatus, smsStatus, function(err) {
+            stmt.run(hr, sp, tm, location, JSON.stringify(abnormalFields), reason, whatsappStatus, smsStatus, function (err) {
                 if (err) return res.status(500).json({ error: err.message });
-                
+
                 res.json({
                     status: "SOS",
                     sosGenerated: true,
@@ -173,6 +187,31 @@ app.get('/api/vitals/fetch-mock', (req, res) => {
         heartRate: Math.floor(Math.random() * (90 - 65) + 65), // 65-90
         spo2: Math.floor(Math.random() * (100 - 96) + 96),     // 96-100
         temperature: (Math.random() * (37.2 - 36.6) + 36.6).toFixed(1) // 36.6-37.2
+    });
+});
+
+// 5. Get All Alerts (Admin)
+app.get('/api/alerts', (req, res) => {
+    db.all("SELECT * FROM alerts ORDER BY timestamp DESC", [], (err, rows) => {
+        if (err) return res.status(500).json({ error: err.message });
+        res.json(rows);
+    });
+});
+
+// 6. Get Patients (Admin)
+app.get('/api/patients', (req, res) => {
+    db.all("SELECT * FROM patients", [], (err, rows) => {
+        if (err) return res.status(500).json({ error: err.message });
+        res.json(rows);
+    });
+});
+
+// 7. Update Patient Risk Level (Admin)
+app.post('/api/patients/update', (req, res) => {
+    const { id, riskLevel } = req.body;
+    db.run("UPDATE patients SET riskLevel = ? WHERE id = ?", [riskLevel, id], function (err) {
+        if (err) return res.status(500).json({ error: err.message });
+        res.json({ message: "Patient updated" });
     });
 });
 

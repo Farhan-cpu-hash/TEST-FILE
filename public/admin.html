@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>VitalLink | Admin Console</title>
+    <link rel="stylesheet" href="style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;500;700&display=swap" rel="stylesheet">
+    <style>
+        .admin-nav {
+            background: #1a0005;
+            border-bottom: 1px solid #eb0029;
+        }
+
+        .danger-text {
+            color: #ff3b3b;
+        }
+
+        .success-text {
+            color: #00e676;
+        }
+
+        .patient-row {
+            transition: background 0.2s;
+        }
+
+        .patient-row:hover {
+            background: rgba(255, 255, 255, 0.05);
+        }
+
+        select.risk-select {
+            padding: 5px;
+            background: #333;
+            color: white;
+            border: 1px solid #555;
+            border-radius: 4px;
+        }
+
+        .login-overlay {
+            position: fixed;
+            inset: 0;
+            background: #000;
+            z-index: 999;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+        }
+    </style>
+</head>
+
+<body>
+
+    <!-- LOGIN OVERLAY -->
+    <div id="login-overlay" class="login-overlay">
+        <h1 style="margin-bottom: 2rem;">Admin Access Required</h1>
+        <input type="password" id="admin-pass" placeholder="Enter Password"
+            style="padding: 1rem; font-size: 1.2rem; margin-bottom: 1rem;">
+        <button onclick="checkAuth()" class="btn primary-btn" style="font-size: 1.2rem;">Login</button>
+        <p id="login-err" style="color: red; margin-top: 1rem;"></p>
+    </div>
+
+    <!-- MAIN APP -->
+    <div id="admin-app" class="hidden">
+        <nav class="navbar admin-nav">
+            <div class="brand">VitalLink <span class="accent">ADMIN</span></div>
+            <div class="links">
+                <a href="#alerts" class="active">Alerts Console</a>
+            </div>
+        </nav>
+
+        <div class="container">
+
+            <!-- ALERTS SECTION -->
+            <div class="card">
+                <h2>Health Alerts (SOS Logs)</h2>
+                <div style="overflow-x: auto;">
+                    <table class="contacts-table">
+                        <thead>
+                            <tr>
+                                <th>Timestamp</th>
+                                <th>Location</th>
+                                <th>Vitals (HR/SpO2/Temp)</th>
+                                <th>Message Status</th>
+                                <th>Reason</th>
+                            </tr>
+                        </thead>
+                        <tbody id="alerts-list">
+                            <!-- Populated via JS -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- PATIENTS / DEVICES MANAGAMENT -->
+            <div class="card">
+                <h2>Registered Patients / Devices</h2>
+                <p>Manage risk profiles (1: Normal, 2: Variation, 3: Critical)</p>
+                <table class="contacts-table">
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Name</th>
+                            <th>Current Risk Level</th>
+                            <th>Action</th>
+                        </tr>
+                    </thead>
+                    <tbody id="patients-list">
+                        <!-- Populated via JS -->
+                    </tbody>
+                </table>
+            </div>
+
+        </div>
+    </div>
+
+    <script>
+        // --- AUTH ---
+        function checkAuth() {
+            const p = document.getElementById('admin-pass').value;
+            if (p === '123') {
+                document.getElementById('login-overlay').remove();
+                document.getElementById('admin-app').classList.remove('hidden');
+                initAdmin();
+            } else {
+                document.getElementById('login-err').textContent = "Incorrect password.";
+            }
+        }
+
+        const API_URL = 'http://localhost:3000/api';
+
+        // --- DATA LOADING ---
+        async function initAdmin() {
+            loadAlerts();
+            loadPatients();
+            // Refresh every 10s
+            setInterval(loadAlerts, 10000);
+        }
+
+        async function loadAlerts() {
+            try {
+                const res = await fetch(`${API_URL}/alerts`);
+                const data = await res.json();
+                const tbody = document.getElementById('alerts-list');
+                tbody.innerHTML = '';
+
+                data.forEach(alert => {
+                    const row = document.createElement('tr');
+                    // Simple Format
+                    const date = new Date(alert.timestamp).toLocaleString();
+                    const whatsappShort = alert.whatsappStatus.includes('Sent') ? '✅ WA Sent' : '❌ WA Failed';
+                    const smsShort = alert.smsStatus.includes('Sent') ? '✅ SMS Sent' : '❌ SMS Failed';
+
+                    row.innerHTML = `
+                        <td style="font-size: 0.9em; color:#888;">${date}</td>
+                        <td>${alert.location}</td>
+                        <td>
+                            HR: <b>${alert.heartRate}</b> <br>
+                            SpO2: <b>${alert.spo2}%</b> <br>
+                            Temp: <b>${alert.temperature}°C</b>
+                        </td>
+                        <td style="font-size: 0.85em;">
+                            <div>${whatsappShort}</div>
+                            <div>${smsShort}</div>
+                        </td>
+                        <td style="color: #ff3b3b; font-size: 0.9em;">${alert.reason}</td>
+                    `;
+                    tbody.appendChild(row);
+                });
+            } catch (e) { console.error("Err loading alerts", e); }
+        }
+
+        async function loadPatients() {
+            try {
+                const res = await fetch(`${API_URL}/patients`);
+                const data = await res.json();
+                const tbody = document.getElementById('patients-list');
+                tbody.innerHTML = '';
+
+                data.forEach(p => {
+                    const row = document.createElement('tr');
+                    row.className = 'patient-row';
+
+                    // Risk Select
+                    const select = document.createElement('select');
+                    select.className = 'risk-select';
+                    select.innerHTML = `
+                        <option value="1" ${p.riskLevel == 1 ? 'selected' : ''}>1 - Normal</option>
+                        <option value="2" ${p.riskLevel == 2 ? 'selected' : ''}>2 - Variation</option>
+                        <option value="3" ${p.riskLevel == 3 ? 'selected' : ''}>3 - CRITICAL</option>
+                    `;
+                    select.onchange = () => updateRisk(p.id, select.value);
+
+                    row.innerHTML = `
+                        <td>#${p.id}</td>
+                        <td>${p.name}</td>
+                        <td id="risk-cell-${p.id}"></td>
+                        <td></td>
+                    `;
+                    // Manual append to handle event
+                    row.children[2].appendChild(select);
+                    row.children[3].innerHTML = `<span style="font-size:0.8em; color:#666;">Auto-Save</span>`;
+
+                    tbody.appendChild(row);
+                });
+            } catch (e) { console.error("Err loading patients", e); }
+        }
+
+        async function updateRisk(id, val) {
+            try {
+                await fetch(`${API_URL}/patients/update`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ id, riskLevel: val })
+                });
+                // Visual feedback could go here
+            } catch (e) { alert("Failed to update status"); }
+        }
+    </script>
+</body>
+
+</html>

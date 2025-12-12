@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>VitalLink | User Portal</title>
+    <link rel="stylesheet" href="style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;500;700&display=swap" rel="stylesheet">
+    <script src="https://kit.fontawesome.com/a076d05399.js" crossorigin="anonymous"></script>
+</head>
+
+<body>
+
+    <nav class="navbar">
+        <div class="brand">VitalLink <span class="accent">User</span></div>
+        <div class="links">
+            <!-- Using javascript:void(0) to prevent hash jumping, logic handled by script.js -->
+            <a href="javascript:void(0)" class="active" onclick="showSection('analyze')">Analyze</a>
+            <a href="javascript:void(0)" onclick="showSection('contacts')">Contacts</a>
+        </div>
+    </nav>
+
+    <div class="container">
+
+        <!-- SECTION: ANALYZE -->
+        <div id="section-analyze">
+            <header class="hero">
+                <h1>Vitals Monitoring</h1>
+                <p>Check your health status immediately.</p>
+            </header>
+
+            <!-- Input Methods -->
+            <div class="input-grid">
+                <div class="card" id="fetch-card">
+                    <h3><span class="icon">⌚</span> Wearable Sync</h3>
+                    <p>Fetch from OnePlus Band.</p>
+                    <button id="btn-fetch" class="btn primary-btn">Fetch Data</button>
+                    <div id="fetch-status" class="status-msg"></div>
+                </div>
+
+                <div class="card" id="upload-card">
+                    <h3><span class="icon">🖼️</span> Upload OHealth</h3>
+                    <p>Screenshot analysis.</p>
+                    <label for="file-upload" class="btn secondary-btn">Choose Image</label>
+                    <input type="file" id="file-upload" accept="image/*" hidden>
+                    <div id="upload-status" class="status-msg"></div>
+                </div>
+            </div>
+
+            <!-- Dashboard -->
+            <div class="card dashboard">
+                <div class="location-bar">
+                    <span>📍 Location:</span>
+                    <span id="location-display">Detecting...</span>
+                </div>
+
+                <div class="vitals-inputs">
+                    <div class="vital-group">
+                        <label>Heart Rate (BPM)</label>
+                        <input type="number" id="inp-hr" placeholder="--" />
+                        <span class="range-info">Avg: 60-100</span>
+                    </div>
+                    <div class="vital-group">
+                        <label>SpO2 (%)</label>
+                        <input type="number" id="inp-spo2" placeholder="--" />
+                        <span class="range-info">Avg: 95-100%</span>
+                    </div>
+                    <div class="vital-group">
+                        <label>Temp (°C)</label>
+                        <input type="number" id="inp-temp" placeholder="--" />
+                        <span class="range-info">Avg: 36.5-37.5</span>
+                    </div>
+                </div>
+
+                <!-- Warning Box added -->
+                <div id="contacts-warning" class="warning-box hidden"
+                    style="color: yellow; margin-top: 10px; border: 1px solid yellow; padding: 10px; border-radius: 5px; background: rgba(255,255,0,0.1);">
+                    ⚠️ Warning: You have fewer than 3 emergency contacts set. SOS may fail.
+                </div>
+
+                <button id="btn-analyze" class="btn action-btn">ANALYZE VITALS</button>
+            </div>
+
+            <!-- Results -->
+            <div id="result-area" class="result-area hidden"></div>
+        </div>
+
+        <!-- SECTION: CONTACTS -->
+        <div id="section-contacts" class="hidden">
+            <header class="hero">
+                <h1>Emergency Contacts</h1>
+                <p>Manage exactly 3 contacts for SOS alerts.</p>
+            </header>
+
+            <div class="card contacts-wrapper">
+                <table class="contacts-table">
+                    <thead>
+                        <tr>
+                            <th>Priority</th>
+                            <th>Name</th>
+                            <th>Phone</th>
+                            <th>Edit</th>
+                        </tr>
+                    </thead>
+                    <tbody id="contacts-list"></tbody>
+                </table>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- Edit Modal -->
+    <div id="edit-modal" class="modal hidden">
+        <div class="modal-content">
+            <h3>Edit Contact</h3>
+            <input type="hidden" id="edit-id">
+            <div class="form-group">
+                <label>Name</label>
+                <input type="text" id="edit-name">
+            </div>
+            <div class="form-group">
+                <label>Phone Number</label>
+                <input type="text" id="edit-phone">
+            </div>
+            <div class="modal-actions">
+                <button id="btn-cancel" class="btn secondary-btn">Cancel</button>
+                <button id="btn-save" class="btn primary-btn">Save Changes</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+    <!-- Removed inline tab logic to rely on script.js -->
+</body>
+
+</html>

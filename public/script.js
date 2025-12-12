@@ -1,5 +1,8 @@
 const API_URL = 'http://localhost:3000/api';
 
+// --- STATE ---
+let contactCount = 0;
+
 // --- GEOLOCATION ---
 let currentLocation = "Unknown Location";
 if ("geolocation" in navigator) {
@@ -36,10 +39,11 @@ if (btnFetch) {
             document.getElementById('inp-temp').value = data.temperature;
 
             clearResults();
-            alert("Success: Synced with OnePlus Band (Simulated)");
+            document.getElementById('fetch-status').textContent = "synced";
+            setTimeout(() => document.getElementById('fetch-status').textContent = "", 2000);
         } catch (e) {
             console.error(e);
-            alert("Error: Simulation backend not running?");
+            alert("Error: Server not reachable.");
         }
     });
 }
@@ -50,20 +54,21 @@ if (inpUpload) {
         if (file) {
             document.getElementById('upload-status').textContent = "Scanning " + file.name + "...";
             setTimeout(() => {
-                // Simulate OCR Result -> Let's force ABNORMAL for demo purposes when uploading
-                document.getElementById('inp-hr').value = 125; // High
-                document.getElementById('inp-spo2').value = 88;  // Low
-                document.getElementById('inp-temp').value = 38.2; // High
+                // Simulate OCR Result -> ABNORMAL for demo
+                document.getElementById('inp-hr').value = 125;
+                document.getElementById('inp-spo2').value = 88;
+                document.getElementById('inp-temp').value = 38.2;
 
-                document.getElementById('upload-status').textContent = "Scan Complete. Data extracted.";
+                document.getElementById('upload-status').textContent = "Scan Complete.";
                 clearResults();
-            }, 1500);
+            }, 1000);
         }
     });
 }
 
 if (btnAnalyze) {
     btnAnalyze.addEventListener('click', async () => {
+        // Validation 1: Inputs
         const hr = document.getElementById('inp-hr').value;
         const spo2 = document.getElementById('inp-spo2').value;
         const temp = document.getElementById('inp-temp').value;
@@ -73,11 +78,19 @@ if (btnAnalyze) {
             return;
         }
 
-        // Show loading state
+        // Validation 2: Contacts Check (New)
+        if (contactCount < 3) {
+            const proceed = confirm("⚠️ Warning: You have fewer than 3 emergency contacts configured. SOS messages might not reach everyone. Proceed anyway?");
+            if (!proceed) {
+                showSection('contacts'); // Redirect to contacts
+                return;
+            }
+        }
+
         btnAnalyze.textContent = "ANALYZING...";
 
         try {
-            const res = await fetch(`${API_URL}/analyze`, {
+            const res = await fetch(`${API_URL}/vitals/analyze`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
@@ -103,7 +116,6 @@ if (btnAnalyze) {
 function clearResults() {
     if (!resultArea) return;
     resultArea.classList.add('hidden');
-    resultArea.className = 'result-area hidden';
     resultArea.innerHTML = '';
 }
 
@@ -111,6 +123,7 @@ function renderResult(data) {
     if (!resultArea) return;
     resultArea.classList.remove('hidden');
     resultArea.innerHTML = '';
+    resultArea.className = 'result-area'; // reset classes
 
     const h2 = document.createElement('h2');
     const p = document.createElement('p');
@@ -148,11 +161,23 @@ function renderResult(data) {
 
 async function loadContacts() {
     const list = document.getElementById('contacts-list');
+    // If we are on a page with no contacts list (e.g. index.html), exit
     if (!list) return;
 
     try {
-        const res = await fetch(`${API_URL}/contacts`);
+        const res = await fetch(`${API_URL}/emergency-contacts`);
         const contacts = await res.json();
+
+        // Update check variable
+        contactCount = contacts.length;
+
+        // Show warning on analyze page if needed (if elements exist)
+        const warnBox = document.getElementById('contacts-warning');
+        if (warnBox) {
+            if (contactCount < 3) warnBox.classList.remove('hidden');
+            else warnBox.classList.add('hidden');
+        }
+
         list.innerHTML = '';
         contacts.forEach(c => {
             const tr = document.createElement('tr');
@@ -166,7 +191,7 @@ async function loadContacts() {
         });
     } catch (e) {
         console.error(e);
-        list.innerHTML = '<tr><td colspan="4">Error loading data. Is server running?</td></tr>';
+        list.innerHTML = '<tr><td colspan="4">Loading... (Ensure Server is Running)</td></tr>';
     }
 }
 
@@ -192,8 +217,8 @@ if (btnSave) {
         const name = document.getElementById('edit-name').value;
         const phone = document.getElementById('edit-phone').value;
 
-        await fetch(`${API_URL}/contacts`, {
-            method: 'POST',
+        await fetch(`${API_URL}/emergency-contacts`, {
+            method: 'PUT',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ id, name, phoneNumber: phone })
         });
@@ -202,3 +227,25 @@ if (btnSave) {
         loadContacts();
     });
 }
+
+// Init
+document.addEventListener('DOMContentLoaded', loadContacts);
+
+// Helper for UI tabs in user.html
+window.showSection = (id) => {
+    // Only works if the elements exist (user.html)
+    const secAnalyze = document.getElementById('section-analyze');
+    const secContacts = document.getElementById('section-contacts');
+
+    if (secAnalyze && secContacts) {
+        secAnalyze.classList.add('hidden');
+        secContacts.classList.add('hidden');
+        document.querySelectorAll('.navbar a').forEach(a => a.classList.remove('active'));
+
+        document.getElementById('section-' + id).classList.remove('hidden');
+        const link = document.querySelector(`a[href="#${id}"]`);
+        if (link) link.classList.add('active');
+
+        if (id === 'contacts') loadContacts();
+    }
+};

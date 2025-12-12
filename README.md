@@ -1,43 +1,38 @@
 # VitalLink - OnePlus Health Demo
 
-This is a prototype SOS Alert System.
+This system demonstrates a Wearable -> SOS workflow.
 
-## Prerequisites
-1. **Node.js**: You MUST have Node.js installed to run the backend. [Download Here](https://nodejs.org/).
+## 🚀 Quick Start
+1. **Double-click** `start_server.bat` to run.
+2. Open the links below.
 
-## Setup Instructions
-1. Open a terminal in this folder: `VitalLink_OnePlus_Demo`.
-2. Install dependencies:
-   ```bash
-   npm install
-   ```
-   *(If this command fails, please ensure Node.js is installed and added to your PATH).*
+## 🔗 Links (Routes)
+1. **User Page** (Input & Analysis):  
+   [http://localhost:3000/user.html](http://localhost:3000/user.html)
+   - Use this to simulate wearable data or upload screenshots.
+   - Triggers SOS if vitals are invalid.
 
-3. Start the Backend Server:
-   ```bash
-   node server/server.js
-   ```
-   You should see: `Connected to SQLite database.` and `Server running on http://localhost:3000`.
+2. **Admin Page** (Central Dashboard):  
+   [http://localhost:3000/admin.html](http://localhost:3000/admin.html)
+   - **Password**: `123`
+   - View received SOS alerts.
+   - Manage Patient Risk Levels (1, 2, 3).
 
-4. Open the Website:
-   - Go to your browser.
-   - Type: `http://localhost:3000/index.html`
+## 🧪 How to Test
+1. **Healthy Case**:
+   - Go to `/user.html`.
+   - Click "Fetch Data" then "Analyze".
+   - Result: Green "User is OK".
+   - Go to `/admin.html` -> No new critical alert (unless history exists).
 
-## How to Test
+2. **SOS Case**:
+   - Go to `/user.html`.
+   - Click "Upload OHealth" (Simulates high HP/Temp).
+   - Click "Analyze".
+   - Result: **RED SOS UI**.
+   - Go to `/admin.html` (Refresh table).
+   - Result: New Red Row showing "High Heart Rate..." and "WA Sent".
 
-### 1. Test "User OK" (Healthy)
-- Click **"Fetch from Band"** (This simulates reading normal ranges).
-- Click **"Analyze Vitals"**.
-- Result: GREEN "User is OK".
-
-### 2. Test "SOS Alert" (Emergency)
-- Click **"Upload Image"** on "Option B" card.
-- Select any random image (Simulation triggers).
-- Notice values are filled with **Abnormal High/Low** data.
-- Click **"Analyze Vitals"**.
-- Result: RED "SOS GENERATED".
-- Check the Server Console to see the log of "Simulated WhatsApp/SMS Sent".
-
-### 3. Emergency Contacts
-- Go to "Emergency Contacts" page.
-- Edit the numbers to see persistence in the database.
+## Configuration
+- **Simulation**: Messaging is simulated in `server/server.js`. Check the console logs for "Sent WhatsApp..." output.
+- **Database**: Stored in `server/database.sqlite`. Delete this file to reset data.
