@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>VitalLink | OnePlus Health Demo</title>
+    <link rel="stylesheet" href="style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;500;700&display=swap" rel="stylesheet">
+</head>
+<body>
+
+    <nav class="navbar">
+        <div class="brand">VitalLink <span class="accent">OnePlus</span></div>
+        <div class="links">
+            <a href="index.html" class="active">Analyze Vitals</a>
+            <a href="contacts.html">Emergency Contacts</a>
+        </div>
+    </nav>
+
+    <div class="container">
+        
+        <!-- Header -->
+        <header class="hero">
+            <h1>Health Analysis & SOS</h1>
+            <p>Connect your OnePlus Band or Upload OHealth Data</p>
+        </header>
+
+        <!-- Input Methods -->
+        <div class="input-grid">
+            <div class="card" id="fetch-card">
+                <h3>Option A: Wearable Sync</h3>
+                <p>Fetch real-time data from synced OnePlus Band.</p>
+                <button id="btn-fetch" class="btn primary-btn">Fetch from Band</button>
+            </div>
+            
+            <div class="card" id="upload-card">
+                <h3>Option B: OHealth Screenshot</h3>
+                <p>Upload a screenshot of your OHealth Dashboard.</p>
+                <label for="file-upload" class="btn secondary-btn">Upload Image</label>
+                <input type="file" id="file-upload" accept="image/*" hidden>
+                <div id="upload-status"></div>
+            </div>
+        </div>
+
+        <!-- Data Display & Analysis -->
+        <div class="card dashboard">
+            <div class="location-bar">
+                <span>📍 Location:</span>
+                <span id="location-display">Detecting...</span>
+            </div>
+
+            <div class="vitals-inputs">
+                <div class="vital-group">
+                    <label>Heart Rate (BPM)</label>
+                    <input type="number" id="inp-hr" placeholder="--" />
+                    <span class="range-info">60-100</span>
+                </div>
+                <div class="vital-group">
+                    <label>SpO2 (%)</label>
+                    <input type="number" id="inp-spo2" placeholder="--" />
+                    <span class="range-info">95-100%</span>
+                </div>
+                <div class="vital-group">
+                    <label>Temp (°C)</label>
+                    <input type="number" id="inp-temp" placeholder="--" />
+                    <span class="range-info">36.5-37.5</span>
+                </div>
+            </div>
+
+            <button id="btn-analyze" class="btn action-btn">ANALYZE VITALS</button>
+        </div>
+
+        <!-- Results Area -->
+        <div id="result-area" class="result-area hidden">
+            <!-- Populated by JS -->
+        </div>
+
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
